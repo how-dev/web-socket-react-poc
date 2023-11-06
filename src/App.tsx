@@ -1,24 +1,69 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 
-function App() {
+interface Message {
+  nickname: string;
+  message: string;
+}
+
+const App = () => {
+  const emptyMessage: Message = {nickname: '', message: ''};
+  const websocketUrl = '...';
+  
+  const [ws] = React.useState<WebSocket>(
+    new WebSocket(websocketUrl)
+  );
+  const [nickname, setNickname] = React.useState<string>('');
+  const [message, setMessage] = React.useState<Message>(emptyMessage);
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  
+  React.useEffect(() => {
+    ws.onopen = () => {
+      console.log('connected');
+    }
+    ws.onmessage = (event) => {
+      const message: Message = JSON.parse(event.data);
+      setMessages([...messages, message]);
+    };
+  })
+  
+  const sendMessage = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    ws.send(JSON.stringify(message));
+    setMessage(emptyMessage);
+  }
+  
+  const renderMessage = (message: Message, key: number) => (
+    <li key={key}>{message.nickname}: {message.message}</li>
+  );
+  
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <main className="App-header">
+        <input
+          type="text"
+          value={nickname}
+          onChange={
+            (e) => {
+              setNickname(e.target.value)
+            }
+          }
+        />
+        <form onSubmit={sendMessage}>
+          <input
+            type="text"
+            value={message.message}
+            onChange={
+              (e) => {
+                setMessage({nickname, message: e.target.value})
+              }
+            }/>
+          <button type="submit">Send</button>
+        </form>
+        <ul>
+          {messages.map(renderMessage)}
+        </ul>
+      </main>
     </div>
   );
 }
